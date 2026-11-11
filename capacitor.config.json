@@ -1,0 +1,6 @@
+{
+  "appId": "com.atelier.literario",
+  "appName": "Atelier Literário",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false }
+}
