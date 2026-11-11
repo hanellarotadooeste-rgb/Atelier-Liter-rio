@@ -1,0 +1,58 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.2.1
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Build web
+        run: npm run build
+
+      - name: Gerar projeto Android
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Compilar APK (debug, assinado com a chave de debug)
+        working-directory: android
+        run: gradle assembleDebug --no-daemon
+
+      - name: Renomear APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk atelier-literario.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atelier-literario-apk
+          path: atelier-literario.apk
+
+      - name: Publicar na aba Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: Atelier Literário (APK mais recente)
+          files: atelier-literario.apk
