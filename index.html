@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#F4EFEA" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Atelier Literário" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Atelier Literário — Diário & Photo Dump</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overscroll-behavior-y: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+    /* Scrollbar discreta para iPad */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(140, 74, 62, 0.25); border-radius: 99px; }
+    button, input, select, textarea { touch-action: manipulation; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React & Babel Standalone para execução nativa direta no Safari iPadOS -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* Ícones SVG Inline (sem dependências externas) */
+    const IconBookOpen = ({ className = "w-5 h-5", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+      </svg>
+    );
+    const IconBookMarked = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><polyline points="10 2 10 10 13 7 16 10 16 2"/>
+      </svg>
+    );
+    const IconCalendar = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
+      </svg>
+    );
+    const IconHeart = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      </svg>
+    );
+    const IconSparkles = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+      </svg>
+    );
+    const IconBarChart = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>
+      </svg>
+    );
+    const IconPalette = ({ className = "w-3.5 h-3.5", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+      </svg>
+    );
+    const IconPlus = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12h14"/><path d="M12 5v14"/>
+      </svg>
+    );
+    const IconStar = ({ className = "w-3 h-3", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    );
+    const IconPen = ({ className = "w-3.5 h-3.5", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+      </svg>
+    );
+    const IconTrash = ({ className = "w-3.5 h-3.5", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>
+      </svg>
+    );
+    const IconDownload = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+      </svg>
+    );
+    const IconSticker = ({ className = "w-3.5 h-3.5", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15.5 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/><path d="M15 3v6h6"/><path d="M10 16s.8 1 2 1c1.3 0 2-1 2-1"/><path d="M8 13h0"/><path d="M16 13h0"/>
+      </svg>
+    );
+    const IconImage = ({ className = "w-4 h-4", style }) => (
+      <svg style={style} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+      </svg>
+    );
+
+    const APP_THEMES = [
+      { id: "terracotta", name: "Atelier Terracota", sidebarBg: "#F4EFEA", mainBg: "#FAF8F5", accent: "#8C4A3E", text: "#2C2A29", mutedText: "#7D7571", border: "#E8DFD8", cardBg: "#FFFFFF" },
+      { id: "rosegold", name: "Rose Gold & Latte", sidebarBg: "#F7EBEB", mainBg: "#FAF5F5", accent: "#B86B77", text: "#362226", mutedText: "#876D72", border: "#EAD5D7", cardBg: "#FFFFFF" },
+      { id: "sage", name: "Sage & Linen", sidebarBg: "#EFEFEA", mainBg: "#F6F6F2", accent: "#5E7059", text: "#262D24", mutedText: "#707A6D", border: "#DBE0D7", cardBg: "#FFFFFF" },
+      { id: "dark_academia", name: "Dark Academia", sidebarBg: "#1C1917", mainBg: "#262320", accent: "#C68B59", text: "#EFEBE7", mutedText: "#A8A099", border: "#3D3834", cardBg: "#2C2825" },
+      { id: "matcha", name: "Matcha & Vanilla", sidebarBg: "#F2F5ED", mainBg: "#FAFBF7", accent: "#738A58", text: "#242B1C", mutedText: "#76826B", border: "#DCE4D2", cardBg: "#FFFFFF" },
+      { id: "lavender", name: "Lavender Dream", sidebarBg: "#F1EFF7", mainBg: "#F8F7FC", accent: "#7B68EE", text: "#27233D", mutedText: "#787394", border: "#DFDAF0", cardBg: "#FFFFFF" }
+    ];
+
+    const INITIAL_BOOKS = [
+      { id: "1", title: "A Paciente Silenciosa", author: "Alex Michaelides", genre: "Thriller", pages: 350, rating: 5, status: "Lido", monthRead: "2026-11", cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=600", review: "Um suspense psicológico impactante com um plot twist inesquecível no final. A narrativa te prende do início ao fim." },
+      { id: "2", title: "Os Sete Maridos de Evelyn Hugo", author: "Taylor Jenkins Reid", genre: "Ficção Contemporânea", pages: 360, rating: 5, status: "Lido", monthRead: "2026-11", cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=600", review: "Uma história emocionante sobre ambição, amor verdadeiro e os custos da fama na Era de Ouro de Hollywood." },
+      { id: "3", title: "Tudo O Que Sei Sobre O Amor", author: "Dolly Alderton", genre: "Memórias / Biografia", pages: 320, rating: 4, status: "Lido", monthRead: "2026-11", cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&q=80&w=600", review: "Uma ode às amizades femininas e às confusões dos 20 e poucos anos. Divertido e profundamente confortador." },
+      { id: "4", title: "Corte de Espinhos e Rosas", author: "Sarah J. Maas", genre: "Fantasia", pages: 432, rating: 5, status: "Lido", monthRead: "2026-11", cover: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&q=80&w=600", review: "Universo envolvente com personagens inesquecíveis e um romance eletrizante." }
+    ];
+
+    const INITIAL_CLOSURES = {
+      "2026-11": {
+        top1Id: "2",
+        favoritesIds: ["1", "2", "4"],
+        readingGoal: 4,
+        personalNotes: "Um mês com ótimas leituras e finais de semana ensolarados no café!",
+        photos: [
+          "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600",
+          "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600",
+          "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=600"
+        ]
+      }
+    };
+
+    const DUMP_STYLES = [
+      { id: "scrapbook_aesthetic", name: "Aesthetic Pinterest Dump", bg: "#EAE5D9", cardBg: "#FFFDF9", text: "#1E1B18", accent: "#D9534F", font: "font-sans" },
+      { id: "pinterest", name: "Pinterest Editorial", bg: "#F9F6F0", cardBg: "#FFFFFF", text: "#2C2A29", accent: "#8C4A3E", font: "font-serif" },
+      { id: "clean", name: "Clean Minimalista", bg: "#FFFFFF", cardBg: "#FAFAFA", text: "#18181B", accent: "#52525B", font: "font-sans" },
+      { id: "scrapbook", name: "Scrapbook Cutout", bg: "#F4EFEA", cardBg: "#FFFDF9", text: "#3D352E", accent: "#A0522D", font: "font-mono" },
+      { id: "dark_academia", name: "Dark Academia", bg: "#1A1817", cardBg: "#2A2624", text: "#E8E2D9", accent: "#D4A373", font: "font-serif" },
+      { id: "lifestyle", name: "Instagram Lifestyle", bg: "#F5F5F7", cardBg: "#FFFFFF", text: "#1D1D1F", accent: "#E07A5F", font: "font-sans" },
+      { id: "journal", name: "Literary Journal", bg: "#FAF4E8", cardBg: "#FFFFFF", text: "#2B2D42", accent: "#6B705C", font: "font-serif" }
+    ];
+
+    /* Utilitário para comprimir fotos escolhidas direto da galeria do iPad */
+    const compressImageFile = (file, maxWidth = 800) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(1, maxWidth / img.width);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("home");
+      const [selectedMonth, setSelectedMonth] = useState("2026-11");
+      const [themeId, setThemeId] = useState(() => localStorage.getItem("literary_app_theme") || "terracotta");
+      const [books, setBooks] = useState(() => {
+        try { const s = localStorage.getItem("literary_journal_books"); return s ? JSON.parse(s) : INITIAL_BOOKS; } catch { return INITIAL_BOOKS; }
+      });
+      const [closures, setClosures] = useState(() => {
+        try { const s = localStorage.getItem("literary_journal_closures"); return s ? JSON.parse(s) : INITIAL_CLOSURES; } catch { return INITIAL_CLOSURES; }
+      });
+
+      /* Estados do Photo Dump */
+      const [dumpTheme, setDumpTheme] = useState("scrapbook_aesthetic");
+      const [ratio, setRatio] = useState("4:5");
+      const [pageIndex, setPageIndex] = useState(0);
+      const [customTitle, setCustomTitle] = useState("minhas obsessões recentes");
+      const [bgColor, setBgColor] = useState("");
+      const [textColor, setTextColor] = useState("");
+      const [showStickerBorder, setShowStickerBorder] = useState(true);
+      const [stickerBorderWidth, setStickerBorderWidth] = useState(6);
+      const [showImessagePopup, setShowImessagePopup] = useState(true);
+      const [imessageText, setImessageText] = useState("tudo que não tem saído da minha mente ☕✨📚");
+      const [showStarsOverlay, setShowStarsOverlay] = useState(true);
+      const [labelStyleText, setLabelStyleText] = useState(true);
+      const [stickerRotation, setStickerRotation] = useState(true);
+
+      const [modalOpen, setModalOpen] = useState(false);
+      const [editingBook, setEditingBook] = useState(null);
+
+      useEffect(() => { localStorage.setItem("literary_app_theme", themeId); }, [themeId]);
+      useEffect(() => { localStorage.setItem("literary_journal_books", JSON.stringify(books)); }, [books]);
+      useEffect(() => { localStorage.setItem("literary_journal_closures", JSON.stringify(closures)); }, [closures]);
+
+      const appScheme = APP_THEMES.find(t => t.id === themeId) || APP_THEMES[0];
+      const monthBooks = books.filter(b => b.monthRead === selectedMonth && b.status === "Lido");
+      const currentClosure = closures[selectedMonth] || { top1Id: null, favoritesIds: [], readingGoal: 4, personalNotes: "", photos: [] };
+      const totalPages = monthBooks.reduce((acc, b) => acc + (Number(b.pages) || 0), 0);
+      const top1Book = books.find(b => b.id === currentClosure.top1Id) || monthBooks[0];
+
+      const handleSaveBook = (bookData) => {
+        if (editingBook) {
+          setBooks(books.map(b => b.id === editingBook.id ? { ...bookData, id: editingBook.id } : b));
+        } else {
+          setBooks([...books, { ...bookData, id: Date.now().toString() }]);
+        }
+        setModalOpen(false);
+        setEditingBook(null);
+      };
+
+      const handleDeleteBook = (id) => {
+        if (window.confirm("Tem certeza que deseja excluir este livro da biblioteca?")) {
+          setBooks(books.filter(b => b.id !== id));
+        }
+      };
+
+      const getMonthName = (ym) => {
+        if (!ym) return "";
+        const [y, m] = ym.split("-");
+        return new Date(Number(y), Number(m) - 1).toLocaleString("pt-BR", { month: "long", year: "numeric" });
+      };
+
+      const navItems = [
+        { id: "home", label: "Meu Mês Literário", Icon: IconCalendar },
+        { id: "library", label: "Biblioteca Pessoal", Icon: IconBookMarked },
+        { id: "closure", label: "Fechamento Mensal", Icon: IconHeart },
+        { id: "photodump", label: "Gerador Photo Dump", Icon: IconSparkles },
+        { id: "stats", label: "Estatísticas & Meta", Icon: IconBarChart }
+      ];
+
+      return (
+        <div className="min-h-screen font-sans antialiased flex flex-col md:flex-row transition-colors duration-300" style={{ backgroundColor: appScheme.mainBg, color: appScheme.text }}>
+          {/* Sidebar estilo Bloom & Plan para iPad */}
+          <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r p-5 md:p-6 flex flex-col justify-between shrink-0 transition-colors duration-300" style={{ backgroundColor: appScheme.sidebarBg, borderColor: appScheme.border }}>
+            <div>
+              <div className="flex items-center space-x-3 mb-6 md:mb-8">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-md text-white transition-colors duration-300" style={{ backgroundColor: appScheme.accent }}>
+                  <IconBookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="font-serif text-xl font-bold tracking-tight">Atelier Literário</h1>
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: appScheme.accent }}>iPad Edition • Photo Dump</p>
+                </div>
+              </div>
+
+              <nav className="flex md:flex-col gap-1.5 overflow-x-auto pb-2 md:pb-0">
+                {navItems.map(({ id, label, Icon }) => {
+                  const isActive = activeTab === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setActiveTab(id)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all text-sm font-medium whitespace-nowrap ${isActive ? "shadow-sm font-semibold text-white" : ""}`}
+                      style={{ backgroundColor: isActive ? appScheme.accent : "transparent", color: isActive ? "#FFFFFF" : appScheme.mutedText }}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: isActive ? "#FFFFFF" : appScheme.accent }} />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="mt-6 md:mt-8 space-y-5 pt-5 border-t" style={{ borderColor: appScheme.border }}>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center space-x-1.5" style={{ color: appScheme.accent }}>
+                  <IconPalette className="w-3.5 h-3.5" />
+                  <span>Tema do Aplicativo</span>
+                </label>
+                <div className="grid grid-cols-6 md:grid-cols-3 gap-2">
+                  {APP_THEMES.map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setThemeId(t.id)}
+                      title={t.name}
+                      className={`h-8 rounded-lg border-2 flex items-center justify-center transition-all ${themeId === t.id ? "scale-105 shadow-md" : "opacity-75 hover:opacity-100"}`}
+                      style={{ backgroundColor: t.sidebarBg, borderColor: themeId === t.id ? appScheme.accent : t.border }}
+                    >
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: t.accent }} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider block mb-2" style={{ color: appScheme.accent }}>Mês Selecionado</label>
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border, color: appScheme.text }}
+                />
+              </div>
+            </div>
+          </aside>
+
+          {/* Conteúdo Principal */}
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto w-full">
+            {activeTab === "home" && (
+              <HomeView
+                appScheme={appScheme}
+                selectedMonth={selectedMonth}
+                monthBooks={monthBooks}
+                closure={currentClosure}
+                top1Book={top1Book}
+                totalPages={totalPages}
+                onOpenAddBook={() => { setEditingBook(null); setModalOpen(true); }}
+                onGoToDump={() => setActiveTab("photodump")}
+                getMonthName={getMonthName}
+              />
+            )}
+            {activeTab === "library" && (
+              <LibraryView
+                appScheme={appScheme}
+                books={books}
+                onAddBook={() => { setEditingBook(null); setModalOpen(true); }}
+                onEditBook={(b) => { setEditingBook(b); setModalOpen(true); }}
+                onDeleteBook={handleDeleteBook}
+              />
+            )}
+            {activeTab === "closure" && (
+              <ClosureView
+                appScheme={appScheme}
+                selectedMonth={selectedMonth}
+                books={books}
+                closure={currentClosure}
+                onSaveClosure={(updated) => setClosures({ ...closures, [selectedMonth]: updated })}
+                getMonthName={getMonthName}
+              />
+            )}
+            {activeTab === "photodump" && (
+              <PhotoDumpView
+                appScheme={appScheme}
+                selectedMonth={selectedMonth}
+                monthBooks={monthBooks}
+                closure={currentClosure}
+                top1Book={top1Book}
+                theme={dumpTheme} setTheme={setDumpTheme}
+                ratio={ratio} setRatio={setRatio}
+                pageIndex={pageIndex} setPageIndex={setPageIndex}
+                customTitle={customTitle} setCustomTitle={setCustomTitle}
+                bgColor={bgColor} setBgColor={setBgColor}
+                textColor={textColor} setTextColor={setTextColor}
+                showStickerBorder={showStickerBorder} setShowStickerBorder={setShowStickerBorder}
+                stickerBorderWidth={stickerBorderWidth} setStickerBorderWidth={setStickerBorderWidth}
+                showImessagePopup={showImessagePopup} setShowImessagePopup={setShowImessagePopup}
+                imessageText={imessageText} setImessageText={setImessageText}
+                showStarsOverlay={showStarsOverlay} setShowStarsOverlay={setShowStarsOverlay}
+                labelStyleText={labelStyleText} setLabelStyleText={setLabelStyleText}
+                stickerRotation={stickerRotation} setStickerRotation={setStickerRotation}
+                getMonthName={getMonthName}
+              />
+            )}
+            {activeTab === "stats" && (
+              <StatsView appScheme={appScheme} books={books} />
+            )}
+          </main>
+
+          {modalOpen && (
+            <BookModal
+              appScheme={appScheme}
+              editingBook={editingBook}
+              selectedMonth={selectedMonth}
+              onClose={() => setModalOpen(false)}
+              onSave={handleSaveBook}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function HomeView({ appScheme, selectedMonth, monthBooks, closure, top1Book, totalPages, onOpenAddBook, onGoToDump, getMonthName }) {
+      const progress = Math.min(100, Math.round((monthBooks.length / (closure.readingGoal || 4)) * 100));
+      return (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+            <div>
+              <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: appScheme.accent }}>Resumo Pessoal</span>
+              <h2 className="text-3xl font-serif font-bold capitalize">{getMonthName(selectedMonth)}</h2>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={onOpenAddBook} className="flex items-center space-x-2 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm active:scale-95 transition" style={{ backgroundColor: appScheme.accent }}>
+                <IconPlus className="w-4 h-4" />
+                <span>Adicionar Leitura</span>
+              </button>
+              <button onClick={onGoToDump} className="flex items-center space-x-2 border px-4 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition" style={{ backgroundColor: appScheme.sidebarBg, borderColor: appScheme.border, color: appScheme.accent }}>
+                <IconSparkles className="w-4 h-4" />
+                <span>Gerar Photo Dump</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium uppercase tracking-wider" style={{ color: appScheme.mutedText }}>Livros Lidos</span>
+                <IconBookOpen className="w-4 h-4" style={{ color: appScheme.accent }} />
+              </div>
+              <div className="text-3xl font-serif font-bold">{monthBooks.length}</div>
+              <p className="text-xs mt-1" style={{ color: appScheme.mutedText }}>Concluídos este mês</p>
+            </div>
+
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium uppercase tracking-wider" style={{ color: appScheme.mutedText }}>Páginas Lidas</span>
+                <IconBookMarked className="w-4 h-4" style={{ color: appScheme.accent }} />
+              </div>
+              <div className="text-3xl font-serif font-bold">{totalPages}</div>
+              <p className="text-xs mt-1" style={{ color: appScheme.mutedText }}>Total acumulado</p>
+            </div>
+
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium uppercase tracking-wider" style={{ color: appScheme.mutedText }}>Meta Mensal</span>
+                <span className="text-xs font-bold" style={{ color: appScheme.accent }}>{progress}%</span>
+              </div>
+              <div className="text-3xl font-serif font-bold">{monthBooks.length} / {closure.readingGoal || 4}</div>
+              <div className="w-full h-2 rounded-full mt-3 overflow-hidden" style={{ backgroundColor: appScheme.sidebarBg }}>
+                <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: appScheme.accent }} />
+              </div>
+            </div>
+          </div>
+
+          {top1Book && (
+            <div className="p-6 rounded-2xl border flex flex-col md:flex-row items-center gap-6 shadow-sm" style={{ backgroundColor: appScheme.sidebarBg, borderColor: appScheme.border }}>
+              <div className="w-32 h-48 rounded-xl overflow-hidden shadow-md shrink-0 border-2 border-white">
+                <img src={top1Book.cover} alt={top1Book.title} className="w-full h-full object-cover" />
+              </div>
+              <div className="space-y-2 flex-1">
+                <span className="inline-block text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ backgroundColor: appScheme.accent }}>★ Grande Favorito do Mês (Top 1)</span>
+                <h3 className="text-2xl font-serif font-bold">{top1Book.title}</h3>
+                <p className="text-sm font-medium" style={{ color: appScheme.mutedText }}>{top1Book.author}</p>
+                {top1Book.review && (
+                  <p className="text-sm italic pl-3 py-1 border-l-2" style={{ borderColor: appScheme.accent, color: appScheme.text }}>"{top1Book.review}"</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <h3 className="text-xl font-serif font-bold">Galeria de Leituras do Mês</h3>
+            {monthBooks.length === 0 ? (
+              <div className="p-8 rounded-2xl text-center border border-dashed space-y-3" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+                <IconBookOpen className="w-8 h-8 mx-auto opacity-40" style={{ color: appScheme.accent }} />
+                <p className="text-sm" style={{ color: appScheme.mutedText }}>Nenhum livro cadastrado como lido para este mês.</p>
+                <button onClick={onOpenAddBook} className="text-xs text-white px-4 py-2 rounded-xl inline-block font-medium" style={{ backgroundColor: appScheme.accent }}>Adicionar Primeiro Livro</button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {monthBooks.map(book => (
+                  <div key={book.id} className="p-3 rounded-2xl border shadow-sm hover:shadow-md transition group" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+                    <div className="aspect-[2/3] rounded-xl overflow-hidden mb-3 relative">
+                      <img src={book.cover} alt={book.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <div className="absolute top-2 right-2 bg-black/60 text-yellow-400 text-xs px-2 py-1 rounded-full backdrop-blur-sm flex items-center space-x-1">
+                        <IconStar className="w-3 h-3" />
+                        <span>{book.rating}</span>
+                      </div>
+                    </div>
+                    <h4 className="font-serif font-bold text-base truncate">{book.title}</h4>
+                    <p className="text-xs truncate" style={{ color: appScheme.mutedText }}>{book.author}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function LibraryView({ appScheme, books, onAddBook, onEditBook, onDeleteBook }) {
+      const [filter, setFilter] = useState("Todos");
+      const filtered = filter === "Todos" ? books : books.filter(b => b.status === filter);
+
+      return (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+            <div>
+              <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: appScheme.accent }}>Acervo Pessoal</span>
+              <h2 className="text-3xl font-serif font-bold">Biblioteca Pessoal</h2>
+            </div>
+            <button onClick={onAddBook} className="flex items-center space-x-2 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm active:scale-95 transition" style={{ backgroundColor: appScheme.accent }}>
+              <IconPlus className="w-4 h-4" />
+              <span>Novo Livro</span>
+            </button>
+          </div>
+
+          <div className="flex space-x-2 border-b pb-3 overflow-x-auto" style={{ borderColor: appScheme.border }}>
+            {["Todos", "Lido", "Lendo", "Quero ler", "Abandonado"].map(st => (
+              <button
+                key={st}
+                onClick={() => setFilter(st)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition"
+                style={{ backgroundColor: filter === st ? appScheme.accent : "transparent", color: filter === st ? "#FFFFFF" : appScheme.mutedText }}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map(book => (
+              <div key={book.id} className="p-4 rounded-2xl border shadow-sm flex space-x-4" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+                <div className="w-24 aspect-[2/3] rounded-xl overflow-hidden shrink-0 shadow">
+                  <img src={book.cover} alt={book.title} className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1 flex flex-col justify-between min-w-0">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1" style={{ backgroundColor: appScheme.sidebarBg, color: appScheme.accent }}>{book.status}</span>
+                    <h4 className="font-serif font-bold text-lg leading-snug line-clamp-2">{book.title}</h4>
+                    <p className="text-xs truncate" style={{ color: appScheme.mutedText }}>{book.author}</p>
+                    <p className="text-[11px] opacity-75 mt-1">{book.genre || "Sem gênero"} • {book.pages || 0} págs</p>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t" style={{ borderColor: appScheme.border }}>
+                    <div className="flex items-center text-amber-400 text-xs space-x-0.5">
+                      {[...Array(5)].map((_, idx) => (
+                        <IconStar key={idx} className={`w-3.5 h-3.5 ${idx < book.rating ? "text-amber-400" : "text-gray-300"}`} />
+                      ))}
+                    </div>
+                    <div className="flex space-x-1">
+                      <button onClick={() => onEditBook(book)} className="p-2 rounded-lg hover:bg-black/5">
+                        <IconPen className="w-4 h-4" style={{ color: appScheme.accent }} />
+                      </button>
+                      <button onClick={() => onDeleteBook(book.id)} className="p-2 text-red-500 rounded-lg hover:bg-red-50">
+                        <IconTrash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ClosureView({ appScheme, selectedMonth, books, closure, onSaveClosure, getMonthName }) {
+      const monthBooks = books.filter(b => b.monthRead === selectedMonth && b.status === "Lido");
+      const [top1Id, setTop1Id] = useState(closure.top1Id || "");
+      const [readingGoal, setReadingGoal] = useState(closure.readingGoal || 4);
+      const [notes, setNotes] = useState(closure.personalNotes || "");
+      const [photoUrl, setPhotoUrl] = useState("");
+      const [photos, setPhotos] = useState(closure.photos || []);
+      const [savedMsg, setSavedMsg] = useState(false);
+
+      useEffect(() => {
+        setTop1Id(closure.top1Id || "");
+        setReadingGoal(closure.readingGoal || 4);
+        setNotes(closure.personalNotes || "");
+        setPhotos(closure.photos || []);
+      }, [selectedMonth, closure]);
+
+      const handleAddUrl = () => {
+        if (photoUrl.trim()) {
+          const updated = [...photos, photoUrl.trim()];
+          setPhotos(updated);
+          setPhotoUrl("");
+          onSaveClosure({ ...closure, photos: updated, top1Id, readingGoal: Number(readingGoal), personalNotes: notes });
+        }
+      };
+
+      const handleUploadFromIpad = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+        const compressed = await Promise.all(files.map(f => compressImageFile(f, 800)));
+        const updated = [...photos, ...compressed];
+        setPhotos(updated);
+        onSaveClosure({ ...closure, photos: updated, top1Id, readingGoal: Number(readingGoal), personalNotes: notes });
+      };
+
+      const handleSaveAll = () => {
+        onSaveClosure({ ...closure, top1Id, readingGoal: Number(readingGoal), personalNotes: notes, photos });
+        setSavedMsg(true);
+        setTimeout(() => setSavedMsg(false), 2500);
+      };
+
+      return (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+            <div>
+              <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: appScheme.accent }}>Registro & Memórias</span>
+              <h2 className="text-3xl font-serif font-bold capitalize">Fechamento ({getMonthName(selectedMonth)})</h2>
+            </div>
+            <button onClick={handleSaveAll} className="text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm active:scale-95 transition" style={{ backgroundColor: appScheme.accent }}>
+              {savedMsg ? "✓ Salvo com sucesso!" : "Salvar Fechamento"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="p-6 rounded-2xl border shadow-sm space-y-5" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <h3 className="font-serif text-xl font-bold">Destaques & Meta do Mês</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Top 1 Favorito</label>
+                  <select value={top1Id} onChange={e => setTop1Id(e.target.value)} className="w-full border rounded-xl p-3 text-sm" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }}>
+                    <option value="">Selecione um livro...</option>
+                    {monthBooks.map(b => (
+                      <option key={b.id} value={b.id}>{b.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Meta de Livros</label>
+                  <input type="number" min="1" max="50" value={readingGoal} onChange={e => setReadingGoal(e.target.value)} className="w-full border rounded-xl p-3 text-sm" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Notas & Impressões do Mês</label>
+                <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Como foi seu mês de leitura? Descreva a vibe, momentos marcantes..." className="w-full border rounded-xl p-3 text-sm resize-none" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }} />
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl border shadow-sm space-y-5" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-xl font-bold">Fotos do Mês</h3>
+                <label className="cursor-pointer flex items-center space-x-2 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm active:scale-95 transition" style={{ backgroundColor: appScheme.accent }}>
+                  <IconImage className="w-4 h-4" />
+                  <span>Galeria do iPad</span>
+                  <input type="file" accept="image/*" multiple onChange={handleUploadFromIpad} className="hidden" />
+                </label>
+              </div>
+
+              <div className="flex space-x-2">
+                <input type="text" placeholder="Ou cole a URL da imagem..." value={photoUrl} onChange={e => setPhotoUrl(e.target.value)} className="flex-1 border rounded-xl px-3 py-2 text-sm" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }} />
+                <button onClick={handleAddUrl} className="text-white px-4 py-2 rounded-xl text-xs font-semibold" style={{ backgroundColor: appScheme.accent }}>Adicionar</button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                {photos.map((src, i) => (
+                  <div key={i} className="aspect-square rounded-xl overflow-hidden relative group border" style={{ borderColor: appScheme.border }}>
+                    <img src={src} alt="Foto Mensal" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => {
+                        const updated = photos.filter((_, idx) => idx !== i);
+                        setPhotos(updated);
+                        onSaveClosure({ ...closure, photos: updated, top1Id, readingGoal: Number(readingGoal), personalNotes: notes });
+                      }}
+                      className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1.5 rounded-full shadow"
+                    >
+                      <IconTrash className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PhotoDumpView({
+      appScheme, selectedMonth, monthBooks, closure, top1Book,
+      theme, setTheme, ratio, setRatio, pageIndex, setPageIndex,
+      customTitle, setCustomTitle, bgColor, setBgColor, textColor, setTextColor,
+      showStickerBorder, setShowStickerBorder, stickerBorderWidth, setStickerBorderWidth,
+      showImessagePopup, setShowImessagePopup, imessageText, setImessageText,
+      showStarsOverlay, setShowStarsOverlay, labelStyleText, setLabelStyleText,
+      stickerRotation, setStickerRotation, getMonthName
+    }) {
+      const styleObj = DUMP_STYLES.find(s => s.id === theme) || DUMP_STYLES[0];
+      const finalBg = bgColor || styleObj.bg;
+      const finalText = textColor || styleObj.text;
+      const [exporting, setExporting] = useState(false);
+
+      /* Renderizador Canvas Nativo High-Res (funciona perfeitamente no Safari iPadOS sem CORS bloqueando imagens) */
+      const handleExportCanvas = async () => {
+        setExporting(true);
+        try {
+          const width = 1080;
+          const height = ratio === "9:16" ? 1920 : ratio === "1:1" ? 1080 : 1350;
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+
+          // Fundo
+          ctx.fillStyle = finalBg;
+          ctx.fillRect(0, 0, width, height);
+
+          // Helper para desenhar imagem com borda adesivo e rotação
+          const loadImg = (url) => new Promise((res) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => res(img);
+            img.onerror = () => res(null);
+            img.src = url;
+          });
+
+          const drawCard = (img, x, y, w, h, deg = 0) => {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            if (stickerRotation && deg !== 0) ctx.rotate((deg * Math.PI) / 180);
+
+            // Sombra
+            ctx.shadowColor = "rgba(0,0,0,0.22)";
+            ctx.shadowBlur = 32;
+            ctx.shadowOffsetY = 12;
+
+            const pad = showStickerBorder ? stickerBorderWidth * 2.5 : 0;
+            const radius = 28;
+            ctx.fillStyle = "#FFFFFF";
+            ctx.beginPath();
+            ctx.roundRect(-w / 2 - pad, -h / 2 - pad, w + pad * 2, h + pad * 2, radius);
+            ctx.fill();
+
+            ctx.shadowColor = "transparent";
+            ctx.beginPath();
+            ctx.roundRect(-w / 2, -h / 2, w, h, radius - 6);
+            ctx.clip();
+
+            if (img) {
+              const scale = Math.max(w / img.width, h / img.height);
+              const nw = img.width * scale;
+              const nh = img.height * scale;
+              ctx.drawImage(img, -nw / 2, -nh / 2, nw, nh);
+            } else {
+              ctx.fillStyle = "#DDD6CE";
+              ctx.fillRect(-w / 2, -h / 2, w, h);
+            }
+            ctx.restore();
+          };
+
+          // Cabeçalho
+          ctx.fillStyle = styleObj.accent;
+          ctx.font = "bold 24px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(`${getMonthName(selectedMonth).toUpperCase()} • READS DUMP`, width / 2, 95);
+
+          const titleText = customTitle || "minhas obsessões recentes";
+          if (labelStyleText) {
+            ctx.save();
+            ctx.translate(width / 2, 165);
+            ctx.rotate((-2 * Math.PI) / 180);
+            ctx.font = "bold 48px Inter, sans-serif";
+            const tw = ctx.measureText(titleText).width + 70;
+            ctx.shadowColor = "rgba(0,0,0,0.15)";
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = "#FEE440";
+            ctx.beginPath();
+            ctx.roundRect(-tw / 2, -42, tw, 84, 20);
+            ctx.fill();
+            ctx.shadowColor = "transparent";
+            ctx.fillStyle = "#000000";
+            ctx.fillText(titleText, 0, 16);
+            ctx.restore();
+          } else {
+            ctx.fillStyle = finalText;
+            ctx.font = "bold 56px Georgia, serif";
+            ctx.fillText(titleText, width / 2, 180);
+          }
+
+          const defaultPhotos = [
+            "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600",
+            "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600"
+          ];
+          const userPhotos = closure.photos && closure.photos.length > 0 ? closure.photos : defaultPhotos;
+
+          if (pageIndex === 0) {
+            const p1 = await loadImg(userPhotos[0]);
+            const p2 = await loadImg(userPhotos[1] || userPhotos[0]);
+            const centerY = height * 0.43;
+            drawCard(p1, 95, centerY - 210, 420, 420, -4);
+            drawCard(p2, width - 515, centerY - 190, 420, 420, 3);
+
+            if (monthBooks[0]) {
+              const b1 = await loadImg(monthBooks[0].cover);
+              drawCard(b1, 130, centerY + 130, 230, 345, 6);
+            }
+            if (monthBooks[1]) {
+              const b2 = await loadImg(monthBooks[1].cover);
+              drawCard(b2, width - 360, centerY + 130, 230, 345, -6);
+            }
+          } else if (pageIndex === 1 && top1Book) {
+            const bTop = await loadImg(top1Book.cover);
+            drawCard(bTop, width / 2 - 190, height * 0.25, 380, 570, 0);
+            ctx.fillStyle = finalText;
+            ctx.font = "bold 44px Georgia, serif";
+            ctx.fillText(top1Book.title, width / 2, height * 0.25 + 640);
+            ctx.font = "30px Inter, sans-serif";
+            ctx.fillText(`${top1Book.author} • ★ ${top1Book.rating}/5`, width / 2, height * 0.25 + 695);
+          } else {
+            const p1 = await loadImg(userPhotos[0]);
+            const p2 = await loadImg(userPhotos[1] || userPhotos[0]);
+            drawCard(p1, 110, height * 0.30, 400, 400, -3);
+            drawCard(p2, width - 510, height * 0.32, 400, 400, 3);
+          }
+
+          // Popup estilo iMessage
+          if (showImessagePopup) {
+            const boxW = 860;
+            const boxH = 110;
+            const bx = (width - boxW) / 2;
+            const by = height - 220;
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.16)";
+            ctx.shadowBlur = 24;
+            ctx.fillStyle = "rgba(255,255,255,0.96)";
+            ctx.beginPath();
+            ctx.roundRect(bx, by, boxW, boxH, 45);
+            ctx.fill();
+            ctx.shadowColor = "transparent";
+
+            ctx.fillStyle = "#3B82F6";
+            ctx.beginPath();
+            ctx.arc(bx + 55, by + 55, 28, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 32px Inter, sans-serif";
+            ctx.fillText("+", bx + 55, by + 66);
+
+            ctx.fillStyle = "#1F2937";
+            ctx.font = "500 28px Inter, sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText(imessageText.slice(0, 46), bx + 105, by + 65);
+            ctx.restore();
+          }
+
+          if (showStarsOverlay) {
+            ctx.fillStyle = "#FACC15";
+            ctx.font = "bold 54px sans-serif";
+            ctx.fillText("✦", 120, 250);
+            ctx.fillText("★", width - 140, 290);
+            ctx.fillText("✨", 130, height - 270);
+          }
+
+          ctx.fillStyle = finalText;
+          ctx.globalAlpha = 0.55;
+          ctx.font = "600 20px Inter, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("ATELIER LITERÁRIO • AESTHETIC DUMP", width / 2, height - 55);
+
+          const dataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.download = `PhotoDump_${selectedMonth}_Pag${pageIndex + 1}.png`;
+          link.href = dataUrl;
+          link.click();
+        } finally {
+          setExporting(false);
+        }
+      };
+
+      const ratioClass = ratio === "9:16" ? "aspect-[9/16] max-w-[360px]" : ratio === "1:1" ? "aspect-square max-w-[440px]" : "aspect-[4/5] max-w-[400px]";
+
+      const stickerStyle = (deg = 0) => {
+        const base = showStickerBorder
+          ? { border: `${stickerBorderWidth}px solid #FFFFFF`, boxShadow: "0 10px 25px rgba(0,0,0,0.18)", borderRadius: "16px" }
+          : { borderRadius: "12px" };
+        return stickerRotation && deg !== 0 ? { ...base, transform: `rotate(${deg}deg)` } : base;
+      };
+
+      return (
+        <div className="space-y-8 animate-fade-in">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+            <div>
+              <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: appScheme.accent }}>Editor de Photo Dump Aesthetic</span>
+              <h2 className="text-3xl font-serif font-bold">Estilo Colagem & Pinterest</h2>
+            </div>
+            <button onClick={handleExportCanvas} disabled={exporting} className="flex items-center space-x-2 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-md active:scale-95 transition" style={{ backgroundColor: appScheme.accent }}>
+              <IconDownload className="w-4 h-4" />
+              <span>{exporting ? "Gerando PNG..." : "Baixar Imagem High-Res"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-4 p-6 rounded-2xl border shadow-sm space-y-6 max-h-[820px] overflow-y-auto" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <h3 className="font-serif text-xl font-bold">Personalização Visual</h3>
+
+              <div>
+                <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Formato</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ label: "Feed (4:5)", val: "4:5" }, { label: "Stories (9:16)", val: "9:16" }, { label: "Quadrado (1:1)", val: "1:1" }].map(f => (
+                    <button key={f.val} onClick={() => setRatio(f.val)} className="py-2.5 px-1 text-xs rounded-xl border font-medium transition text-center" style={{ backgroundColor: ratio === f.val ? appScheme.sidebarBg : "transparent", borderColor: ratio === f.val ? appScheme.accent : appScheme.border, color: ratio === f.val ? appScheme.accent : appScheme.mutedText }}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Estilo Visual</label>
+                <div className="space-y-2">
+                  {DUMP_STYLES.map(st => (
+                    <button key={st.id} onClick={() => { setTheme(st.id); setBgColor(""); setTextColor(""); }} className="w-full flex items-center justify-between p-3 rounded-xl border text-xs font-medium transition" style={{ backgroundColor: theme === st.id ? appScheme.sidebarBg : "transparent", borderColor: theme === st.id ? appScheme.accent : appScheme.border }}>
+                      <span>{st.name}</span>
+                      <div className="flex space-x-1.5">
+                        <div className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: st.bg }} />
+                        <div className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: st.accent }} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t" style={{ borderColor: appScheme.border }}>
+                <h4 className="text-xs uppercase font-bold tracking-wider flex items-center space-x-1.5" style={{ color: appScheme.accent }}>
+                  <IconSticker className="w-3.5 h-3.5" />
+                  <span>Adesivos & Efeitos</span>
+                </h4>
+                <label className="flex items-center justify-between py-1 cursor-pointer">
+                  <span className="text-xs font-medium">Contorno Branco (Efeito Adesivo)</span>
+                  <input type="checkbox" checked={showStickerBorder} onChange={e => setShowStickerBorder(e.target.checked)} className="w-4 h-4" style={{ accentColor: appScheme.accent }} />
+                </label>
+                {showStickerBorder && (
+                  <div>
+                    <label className="block text-[11px] mb-1" style={{ color: appScheme.mutedText }}>Espessura ({stickerBorderWidth}px)</label>
+                    <input type="range" min="2" max="12" value={stickerBorderWidth} onChange={e => setStickerBorderWidth(Number(e.target.value))} className="w-full" style={{ accentColor: appScheme.accent }} />
+                  </div>
+                )}
+                <label className="flex items-center justify-between py-1 cursor-pointer">
+                  <span className="text-xs font-medium">Rotação Casual</span>
+                  <input type="checkbox" checked={stickerRotation} onChange={e => setStickerRotation(e.target.checked)} className="w-4 h-4" style={{ accentColor: appScheme.accent }} />
+                </label>
+                <label className="flex items-center justify-between py-1 cursor-pointer">
+                  <span className="text-xs font-medium">Etiqueta Amarela no Título</span>
+                  <input type="checkbox" checked={labelStyleText} onChange={e => setLabelStyleText(e.target.checked)} className="w-4 h-4" style={{ accentColor: appScheme.accent }} />
+                </label>
+                <label className="flex items-center justify-between py-1 cursor-pointer">
+                  <span className="text-xs font-medium">Brilhos & Estrelas</span>
+                  <input type="checkbox" checked={showStarsOverlay} onChange={e => setShowStarsOverlay(e.target.checked)} className="w-4 h-4" style={{ accentColor: appScheme.accent }} />
+                </label>
+                <label className="flex items-center justify-between py-1 cursor-pointer">
+                  <span className="text-xs font-medium">Caixa de Mensagem (iMessage)</span>
+                  <input type="checkbox" checked={showImessagePopup} onChange={e => setShowImessagePopup(e.target.checked)} className="w-4 h-4" style={{ accentColor: appScheme.accent }} />
+                </label>
+                {showImessagePopup && (
+                  <input type="text" value={imessageText} onChange={e => setImessageText(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }} />
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase font-bold tracking-wider mb-2" style={{ color: appScheme.accent }}>Página do Carrossel</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map(idx => (
+                    <button key={idx} onClick={() => setPageIndex(idx)} className="py-2 text-xs rounded-xl border font-medium transition text-center" style={{ backgroundColor: pageIndex === idx ? appScheme.accent : "transparent", color: pageIndex === idx ? "#FFFFFF" : appScheme.mutedText, borderColor: pageIndex === idx ? appScheme.accent : appScheme.border }}>
+                      Página {idx + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t" style={{ borderColor: appScheme.border }}>
+                <div>
+                  <label className="block text-xs mb-1" style={{ color: appScheme.mutedText }}>Título Personalizado</label>
+                  <input type="text" value={customTitle} onChange={e => setCustomTitle(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs" style={{ backgroundColor: appScheme.mainBg, borderColor: appScheme.border }} />
+                </div>
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label className="block text-xs mb-1" style={{ color: appScheme.mutedText }}>Cor do Fundo</label>
+                    <input type="color" value={finalBg} onChange={e => setBgColor(e.target.value)} className="w-full h-9 rounded border cursor-pointer" style={{ borderColor: appScheme.border }} />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs mb-1" style={{ color: appScheme.mutedText }}>Cor do Texto</label>
+                    <input type="color" value={finalText} onChange={e => setTextColor(e.target.value)} className="w-full h-9 rounded border cursor-pointer" style={{ borderColor: appScheme.border }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Canvas Preview */}
+            <div className="lg:col-span-8 flex flex-col items-center justify-center p-6 rounded-2xl border min-h-[560px]" style={{ backgroundColor: appScheme.sidebarBg, borderColor: appScheme.border }}>
+              <div className={`w-full ${ratioClass} shadow-2xl rounded-sm p-6 flex flex-col justify-between transition-all duration-300 relative overflow-hidden ${styleObj.font}`} style={{ backgroundColor: finalBg, color: finalText }}>
+                {showStarsOverlay && (
+                  <>
+                    <span className="absolute top-5 left-6 text-amber-300 text-xl font-bold animate-pulse z-10 select-none">✦</span>
+                    <span className="absolute top-16 right-8 text-yellow-400 text-2xl font-bold z-10 select-none">★</span>
+                    <span className="absolute bottom-20 left-8 text-amber-200 text-lg z-10 select-none">✨</span>
+                    <span className="absolute top-1/2 right-5 text-yellow-300 text-xl z-10 select-none">✦</span>
+                  </>
+                )}
+
+                {pageIndex === 0 && (
+                  <div className="h-full flex flex-col justify-between space-y-4 relative z-0">
+                    <div className="text-center pt-2">
+                      <span className="text-[9px] tracking-widest font-bold uppercase block mb-1 opacity-75" style={{ color: styleObj.accent }}>{getMonthName(selectedMonth)} • READS DUMP</span>
+                      {labelStyleText ? (
+                        <div className="inline-block bg-[#FEE440] text-black px-4 py-1.5 rounded-lg shadow-md font-bold text-xl md:text-2xl transform -rotate-2 border border-black/10">
+                          {customTitle || "minhas obsessões recentes"}
+                        </div>
+                      ) : (
+                        <h2 className="text-2xl font-serif font-bold tracking-tight">{customTitle || "minhas obsessões recentes"}</h2>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 my-auto relative">
+                      {(closure.photos.length > 0 ? closure.photos : [
+                        "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600",
+                        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600"
+                      ]).slice(0, 2).map((src, idx) => (
+                        <div key={idx} className="aspect-square overflow-hidden transition duration-300" style={stickerStyle(idx === 0 ? -4 : 3)}>
+                          <img src={src} alt="Rotina" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+
+                      {monthBooks.slice(0, 2).map((b, idx) => (
+                        <div key={b.id} className={`aspect-[2/3] w-24 overflow-hidden absolute bottom-[-10px] ${idx === 0 ? "left-4" : "right-4"} z-20`} style={stickerStyle(idx === 0 ? 6 : -6)}>
+                          <img src={b.cover} alt={b.title} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+
+                    {showImessagePopup && (
+                      <div className="mx-auto w-11/12 bg-white/95 backdrop-blur-md text-black rounded-2xl p-2.5 shadow-lg border border-gray-200 flex items-center space-x-2 z-30">
+                        <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">+</div>
+                        <p className="text-[10px] font-medium leading-tight flex-1 text-gray-800">{imessageText}</p>
+                        <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] shrink-0">↑</div>
+                      </div>
+                    )}
+
+                    <div className="text-center pt-1">
+                      <p className="text-[8px] uppercase tracking-widest font-semibold opacity-60">Atelier Literário • Aesthetic Dump</p>
+                    </div>
+                  </div>
+                )}
+
+                {pageIndex === 1 && (
+                  <div className="h-full flex flex-col justify-between">
+                    <div className="flex justify-between items-baseline border-b pb-2" style={{ borderColor: `${finalText}20` }}>
+                      <span className="text-[10px] tracking-widest font-bold uppercase" style={{ color: styleObj.accent }}>Destaques & Favoritos</span>
+                      <span className="text-[10px] opacity-60">Página 2</span>
+                    </div>
+                    {top1Book ? (
+                      <div className="my-auto space-y-4">
+                        <div className="flex gap-4 items-center p-3 rounded-xl border" style={{ backgroundColor: styleObj.cardBg, borderColor: `${finalText}15` }}>
+                          <div className="w-24 aspect-[2/3] rounded overflow-hidden shrink-0" style={stickerStyle(0)}>
+                            <img src={top1Book.cover} alt={top1Book.title} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded text-white" style={{ backgroundColor: styleObj.accent }}>Top 1 do Mês</span>
+                            <h3 className="text-base font-serif font-bold leading-tight">{top1Book.title}</h3>
+                            <p className="text-xs opacity-70">{top1Book.author}</p>
+                            <div className="text-amber-500 text-xs">★ {top1Book.rating} / 5</div>
+                          </div>
+                        </div>
+                        {top1Book.review && (
+                          <div className="p-3 rounded-lg text-xs italic border-l-2" style={{ backgroundColor: styleObj.cardBg, borderColor: styleObj.accent }}>
+                            "{top1Book.review}"
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-xs opacity-60">Nenhum livro selecionado como favorito.</div>
+                    )}
+                    <div className="text-center pt-2 border-t" style={{ borderColor: `${finalText}20` }}>
+                      <p className="text-[9px] uppercase tracking-widest font-semibold opacity-60">Momento Leitura</p>
+                    </div>
+                  </div>
+                )}
+
+                {pageIndex === 2 && (
+                  <div className="h-full flex flex-col justify-between">
+                    <div className="flex justify-between items-baseline border-b pb-2" style={{ borderColor: `${finalText}20` }}>
+                      <span className="text-[10px] tracking-widest font-bold uppercase" style={{ color: styleObj.accent }}>Mood & Rotina</span>
+                      <span className="text-[10px] opacity-60">Página 3</span>
+                    </div>
+                    <div className="my-auto space-y-3">
+                      <p className="text-xs font-serif italic text-center px-4">"{closure.personalNotes || "Um mês dedicado às boas histórias e cafés quentes."}"</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(closure.photos.length > 0 ? closure.photos : [
+                          "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&q=80&w=600",
+                          "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600"
+                        ]).slice(0, 4).map((src, idx) => (
+                          <div key={idx} className="aspect-square rounded-lg overflow-hidden" style={stickerStyle(idx % 2 === 0 ? -2 : 2)}>
+                            <img src={src} alt="Rotina" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-center pt-2 border-t" style={{ borderColor: `${finalText}20` }}>
+                      <p className="text-[9px] uppercase tracking-widest font-semibold opacity-60">Photo Dump Literário</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function StatsView({ appScheme, books }) {
+      const readBooks = books.filter(b => b.status === "Lido");
+      const totalPages = readBooks.reduce((acc, b) => acc + (Number(b.pages) || 0), 0);
+      const avgRating = readBooks.length > 0 ? (readBooks.reduce((acc, b) => acc + (Number(b.rating) || 0), 0) / readBooks.length).toFixed(1) : 0;
+      const topRated = readBooks.length > 0 ? [...readBooks].sort((a, b) => b.rating - a.rating)[0] : null;
+
+      return (
+        <div className="space-y-8 animate-fade-in">
+          <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+            <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: appScheme.accent }}>Análise de Leitura</span>
+            <h2 className="text-3xl font-serif font-bold">Estatísticas & Retrospectiva</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <span className="text-xs font-medium uppercase tracking-wider block mb-1" style={{ color: appScheme.mutedText }}>Total de Livros</span>
+              <div className="text-3xl font-serif font-bold">{readBooks.length}</div>
+            </div>
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <span className="text-xs font-medium uppercase tracking-wider block mb-1" style={{ color: appScheme.mutedText }}>Páginas Lidas</span>
+              <div className="text-3xl font-serif font-bold">{totalPages}</div>
+            </div>
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <span className="text-xs font-medium uppercase tracking-wider block mb-1" style={{ color: appScheme.mutedText }}>Média de Notas</span>
+              <div className="text-3xl font-serif font-bold">★ {avgRating}</div>
+            </div>
+            <div className="p-6 rounded-2xl border shadow-sm" style={{ backgroundColor: appScheme.cardBg, borderColor: appScheme.border }}>
+              <span className="text-xs font-medium uppercase tracking-wider block mb-1" style={{ color: appScheme.mutedText }}>Top Avaliado</span>
+              <div className="text-base font-serif font-bold truncate">{topRated ? topRated.title : "N/A"}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function BookModal({ appScheme, editingBook, selectedMonth, onClose, onSave }) {
+      const [form, setForm] = useState(editingBook || {
+        title: "", author: "", genre: "", pages: "", rating: 5, status: "Lido", monthRead: selectedMonth,
+        cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=600", review: ""
+      });
+
+      const handleCoverUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const compressed = await compressImageFile(file, 600);
+        setForm({ ...form, cover: compressed });
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(form);
+      };
+
+      return (
+        <div
